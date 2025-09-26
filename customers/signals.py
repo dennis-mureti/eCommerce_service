@@ -25,7 +25,7 @@ def customer_created(sender, instance, created, **kwargs):
             if not current_app.conf.task_always_eager:
                 send_welcome_message_async.delay(instance.id)
         except Exception as e:
-            logger.warning(f"Could not send welcome message (Celery may not be running): {e}")
+            logger.warning(f"Could not send welcome message, (Celery may not be running): {e}")
 
 @receiver(user_logged_in)
 def customer_logged_in(sender, request, user, **kwargs):
