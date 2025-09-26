@@ -183,5 +183,4 @@ docker run -p 8000:8000 ecommerce-api:latest
 
 ## License
 
-This project is licensed under the MIT License.
 # eCommerce_service
