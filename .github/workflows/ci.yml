@@ -43,10 +43,10 @@ jobs:
           
       - name: Run tests
         env:
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/ecommerce_test
+          DATABASE_URL: postgresql://postgres:e-commerce@db.tslmzgiathzolqfolvpj.supabase.co:5432/postgres
           REDIS_URL: redis://localhost:6379/0
         run: |
-          python manage.py test
+          python -m pytest
 
   build-and-push:
     needs: test
