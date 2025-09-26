@@ -4,7 +4,13 @@ Django settings for ecommerce project.
 
 import os
 from pathlib import Path
-from decouple import config
+from decouple import config 
+import dj_database_url
+
+
+# Load environment variables
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -66,6 +72,17 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'ecommerce.wsgi.application'
 
+
+
+# Database configuration
+DATABASES = {
+    'default': dj_database_url.config(
+        default=DATABASE_URL,
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
+}
+
 # Database
 DATABASES = {
     'default': {
@@ -77,6 +94,8 @@ DATABASES = {
         'PORT': config('DB_PORT', default='5432'),
     }
 }
+
+ 
 
 AUTH_USER_MODEL = 'customers.Customer'
 

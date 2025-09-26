@@ -10,4 +10,8 @@ spec:
     - protocol: TCP
       port: 80
       targetPort: 8000
-  type: ClusterIP
+  type: LoadBalancer
+  stringData:
+    DATABASE_URL: "postgresql://postgres:e-commerce@db.tslmzgiathzolqfolvpj.supabase.co:5432/postgres"
+    SECRET_KEY: "your-django-secret-key"
+    REDIS_URL: "redis://redis:6379/0"

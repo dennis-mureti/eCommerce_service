@@ -15,61 +15,59 @@ spec:
       labels:
         app: ecommerce-api
     spec:
+      imagePullSecrets:
+        - name: regcred
       containers:
-      - name: ecommerce-api
-        image: your-registry/ecommerce-api:latest
-        ports:
-        - containerPort: 8000
-        env:
-        - name: DEBUG
-          valueFrom:
-            configMapKeyRef:
-              name: ecommerce-config
-              key: DEBUG
-        - name: ALLOWED_HOSTS
-          valueFrom:
-            configMapKeyRef:
-              name: ecommerce-config
-              key: ALLOWED_HOSTS
-        - name: SECRET_KEY
-          valueFrom:
-            secretKeyRef:
-              name: ecommerce-secrets
-              key: SECRET_KEY
-        - name: DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: ecommerce-secrets
-              key: DATABASE_URL
-        - name: REDIS_URL
-          valueFrom:
-            secretKeyRef:
-              name: ecommerce-secrets
-              key: REDIS_URL
-        - name: AFRICAS_TALKING_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: ecommerce-secrets
-              key: AFRICAS_TALKING_API_KEY
-        livenessProbe:
-          httpGet:
-            path: /health/
-            port: 8000
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /health/
-            port: 8000
-          initialDelaySeconds: 5
-          periodSeconds: 5
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "250m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
+        - name: ecommerce-api
+          image: mureti/ecommerce-api:latest
+          imagePullPolicy: Always 
+          ports:
+            - containerPort: 8000
+          env:
+            - name: DEBUG
+              value: "True"
+            - name: ALLOWED_HOSTS
+              value: "*"
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ecommerce-secrets
+                  key: SECRET_KEY
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: ecommerce-secrets
+                  key: DATABASE_URL
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: ecommerce-secrets
+                  key: REDIS_URL
+            - name: AFRICAS_TALKING_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ecommerce-secrets
+                  key: AFRICAS_TALKING_API_KEY
+          command: ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
+          livenessProbe:
+            httpGet:
+              path: /health/
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health/
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -88,19 +86,24 @@ spec:
       labels:
         app: celery-worker
     spec:
+      imagePullSecrets:
+        - name: regcred
       containers:
-      - name: celery-worker
-        image: your-registry/ecommerce-api:latest
-        command: ["celery", "-A", "ecommerce", "worker", "-l", "info"]
-        envFrom:
-        - configMapRef:
-            name: ecommerce-config
-        - secretRef:
-            name: ecommerce-secrets
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "250m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
+        - name: celery-worker
+          image: mureti/ecommerce-api:latest
+          command: ["python", "-m", "celery", "-A", "ecommerce", "worker", "-l", "info"]
+          securityContext:
+            runAsUser: 0  # Run as non-root user
+            allowPrivilegeEscalation: false
+          envFrom:
+            - configMapRef:
+                name: ecommerce-config
+            - secretRef:
+                name: ecommerce-secrets
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"

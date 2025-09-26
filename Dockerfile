@@ -1,15 +1,10 @@
-# Multi-stage build for production optimization
+# Builder stage
 FROM python:3.11-slim as builder
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
-
-# Install system dependencies
+# Install build dependencies
 RUN apt-get update && apt-get install -y \
-    build-essential \
+    gcc \
+    python3-dev \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
@@ -20,8 +15,11 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --user -r requirements.txt
 
+# Install dependencies directly
+RUN pip install --user django djangorestframework psycopg2-binary celery redis
+
 # Production stage
-FROM python:3.11-slim as production
+FROM python:3.11-slim
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -33,34 +31,28 @@ RUN apt-get update && apt-get install -y \
     libpq5 \
     && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user
-RUN groupadd -r django && useradd -r -g django django
-
 # Set work directory
 WORKDIR /app
 
 # Copy Python dependencies from builder stage
 COPY --from=builder /root/.local /root/.local
 
+# Ensure scripts in .local are usable
+ENV PATH="/root/.local/bin:${PATH}"
+
 # Copy project files
 COPY . .
 
-# Create necessary directories
-RUN mkdir -p /app/staticfiles /app/media && \
-    chown -R django:django /app
 
-# Collect static files
-RUN python manage.py collectstatic --noinput
+# Install Django and other dependencies
+RUN pip install --user django
 
-# Switch to non-root user
-USER django
+# Run migrations and collect static files (optional)
+# RUN python manage.py migrate 
+# RUN python manage.py collectstatic --noinput
 
-# Expose port
+# Expose the port the app runs on
 EXPOSE 8000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD python manage.py check --deploy || exit 1
-
-# Run application
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "ecommerce.wsgi:application"]
+# Command to run the application
+CMD ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
