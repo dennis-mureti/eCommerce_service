@@ -43,6 +43,7 @@ jobs:
           
       - name: Run tests
         env:
+          DJANGO_SETTINGS_MODULE: ecommerce.settings
           DATABASE_URL: postgresql://postgres:e-commerce@db.tslmzgiathzolqfolvpj.supabase.co:5432/postgres
           REDIS_URL: redis://localhost:6379/0
         run: |
